@@ -4,12 +4,19 @@
 
 ### TODO
 
-1. 通过高德 api 初始化数据库
-2. 通过静态 json 文件初始化数据库
+- 通过静态 `json` 文件初始化数据库；
+- 国外城市数据；
 
 ### 参考资料
 
-#### ChinaRegionDistrict
+#### 高德地图 api
 
-https://github.com/boyan01/ChinaRegionDistrict
+https://lbs.amap.com/api/webservice/guide/api/district
 
+#### 中国城市经纬度
+
+http://www.hao828.com/ChaXun/ZhongGuoChengShiJingWeiDu
+
+#### 世界各地的邮编
+
+https://www.nowmsg.com/
