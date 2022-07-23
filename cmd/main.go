@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO
 var (
 	dsn = kingpin.Flag("dsn", "Mysql 链接, 参考文档: https://github.com/go-sql-driver/mysql#dsn-data-source-name").String()
 )
