@@ -2,24 +2,28 @@ package main
 
 import (
 	"github.com/gogroup/coordinate/region"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
+	"github.com/gogroup/coordinate/storage"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
+// TODO 参数检查，不传参无法执行，输出 -h
 var (
-	dsn = kingpin.Flag("dsn", "Mysql 链接, 参考文档: https://github.com/go-sql-driver/mysql#dsn-data-source-name").String()
+	sink = kingpin.Flag(
+		"sink",
+		"持久化数据的系统类型，目前支持的类型有 [mysql]",
+	).Required().String()
 )
 
 func main() {
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
-	db, err := gorm.Open(mysql.Open(*dsn), &gorm.Config{})
+	coordinates, err := region.Collect()
 	if err != nil {
 		panic(err)
 	}
-	err = region.Collect(db)
+	s, err := storage.Init(*sink)
 	if err != nil {
 		panic(err)
 	}
+	s.Store(coordinates)
 }

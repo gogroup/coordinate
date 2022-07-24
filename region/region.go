@@ -2,7 +2,6 @@ package region
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 )
 
 const topCode = "0"
@@ -22,53 +21,31 @@ type Region interface {
 
 var (
 	collectors = make(map[string]func() (Region, error))
-	regions    = make(map[string]Region)
 )
 
-func registerCollector(region string, collector func() (Region, error)) {
-	collectors[region] = collector
+func registerCollector(regionName string, collector func() (Region, error)) {
+	collectors[regionName] = collector
 }
 
-func Collect(db *gorm.DB) error {
-	err := db.AutoMigrate(&Coordinate{})
+func Collect() (map[string]*Coordinate, error) {
+	fmt.Println("Start collect coordinates.")
+	coordinates, err := collect()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	fmt.Println("Start collect regions.")
-	err = collect()
-	if err != nil {
-		return err
-	}
-	fmt.Println("Start write to db.")
-	write(db)
-	return nil
+	return coordinates, nil
 }
 
-func collect() error {
+func collect() (map[string]*Coordinate, error) {
+	coordinates := make(map[string]*Coordinate)
 	for s, f := range collectors {
 		fmt.Printf("- Collecting %s...\n", s)
 		region, err := f()
 		if err != nil {
-			return err
+			return nil, err
 		}
-		regions[s] = region
+		coordinates[s] = region.Convert(topCode)
 		fmt.Println("- Done!")
 	}
-	return nil
-}
-
-func write(db *gorm.DB) {
-	for s, region := range regions {
-		fmt.Printf("- Writing %s...\n", s)
-		coordinate := region.Convert(topCode)
-		w(db, coordinate)
-		fmt.Println("- Done!")
-	}
-}
-
-func w(db *gorm.DB, coordinate *Coordinate) {
-	db.Create(coordinate)
-	for _, subCoordinate := range coordinate.SubCoordinates {
-		w(db, subCoordinate)
-	}
+	return coordinates, nil
 }
