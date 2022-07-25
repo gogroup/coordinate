@@ -8,9 +8,14 @@
 |----|----|----|
 |中国|[高德开放平台](https://lbs.amap.com/api/webservice/guide/api/district)|[`region/china.json`](https://github.com/gogroup/coordinate/blob/main/region/china.json)
 
-目前支持的存储系统：
+目前支持的存储系统以及使用样例：
 
-- MySQL
+- `mysql`
+
+  ```shell
+  # 拉取中国地区数据并且将数据存入 mysql
+  $ coordinate --storage.type mysql --storage.mysql.dsn {YOUR_DSN} --amap.key {YOUR_AMAP_KEY}
+  ```
 
 ## TODO
 
