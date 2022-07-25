@@ -3,6 +3,7 @@ package region
 import (
 	"fmt"
 	"github.com/gogroup/coordinate/storage"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -69,7 +70,7 @@ func disableDefaultRegions() {
 }
 
 // Collect enabled regions coordinate
-func Collect() (map[string][]*storage.Coordinate, error) {
+func Collect(logger *log.Logger) (map[string][]*storage.Coordinate, error) {
 	if *ddr {
 		disableDefaultRegions()
 	}
@@ -83,20 +84,20 @@ func Collect() (map[string][]*storage.Coordinate, error) {
 			disableRegionList = append(disableRegionList, regionName)
 		}
 	}
-	fmt.Printf("Enabled region list:  %v\n", enableRegionList)
-	fmt.Printf("Disabled region list: %v\n", disableRegionList)
+	logger.Info(fmt.Sprintf("Enabled region list:  %v", enableRegionList))
+	logger.Info(fmt.Sprintf("Disabled region list: %v", disableRegionList))
 
-	fmt.Println("Start collect region coordinates.")
+	logger.Info("Start collect region coordinates.")
 	regionCoordinates := make(map[string][]*storage.Coordinate)
 	for regionName, state := range regionState {
 		if *state {
-			fmt.Printf("- Collecting %s...\n", regionName)
+			logger.Info(fmt.Sprintf("- Collecting %s...", regionName))
 			coordinates, err := regionCollectors[regionName]()
 			if err != nil {
 				return nil, err
 			}
 			regionCoordinates[regionName] = coordinates
-			fmt.Println("- Done!")
+			logger.Info("- Done!")
 		}
 	}
 	return regionCoordinates, nil

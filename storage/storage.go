@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -44,16 +45,16 @@ func create() (storage, error) {
 	return nil, errors.New("no storage type: " + *storageType)
 }
 
-func Store(m map[string][]*Coordinate) error {
+func Store(logger *log.Logger, m map[string][]*Coordinate) error {
 	s, err := create()
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Start write to %s.\n", *storageType)
+	logger.Info(fmt.Sprintf("Start write to %s.", *storageType))
 	for regionName, coordinates := range m {
-		fmt.Printf("- Writing %s...\n", regionName)
+		logger.Info(fmt.Sprintf("- Writing %s...", regionName))
 		s.store(coordinates)
-		fmt.Println("- Done!")
+		logger.Info("- Done!")
 	}
 	return nil
 }
