@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"fmt"
-	"github.com/gogroup/coordinate/region"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -25,31 +23,20 @@ var (
 	).String()
 )
 
-func initMysql() (Storage, error) {
+func initMysql() (storage, error) {
 	db, err := gorm.Open(mysql.Open(*dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
-	err = db.AutoMigrate(&region.Coordinate{})
+	err = db.AutoMigrate(&Coordinate{})
 	if err != nil {
 		return nil, err
 	}
 	return &Mysql{DB: db}, nil
 }
 
-// Store TODO 这里可以优化一下，改成让 Store 去做，所有的统一控制日志
-func (m *Mysql) Store(coordinates map[string]*region.Coordinate) {
-	fmt.Println("Start write to mysql.")
-	for s, coordinate := range coordinates {
-		fmt.Printf("- Writing %s...\n", s)
-		w(m.DB, coordinate)
-		fmt.Println("- Done!")
-	}
-}
-
-func w(db *gorm.DB, coordinate *region.Coordinate) {
-	db.Create(coordinate)
-	for _, subCoordinate := range coordinate.SubCoordinates {
-		w(db, subCoordinate)
+func (m *Mysql) store(coordinates []*Coordinate) {
+	for _, coordinate := range coordinates {
+		m.DB.Create(coordinate)
 	}
 }

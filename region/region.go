@@ -2,58 +2,101 @@ package region
 
 import (
 	"fmt"
+	"github.com/gogroup/coordinate/storage"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-const topCode = "0"
-
-type Coordinate struct {
-	SuperCoordinateCode string
-	Code                string
-	Name                string
-	Longitude           string
-	Latitude            string
-	SubCoordinates      []*Coordinate `gorm:"-:all"`
-}
-
-type Region interface {
-	Convert(superCoordinateCode string) *Coordinate
-}
-
 var (
+	ddr = kingpin.Flag(
+		"region.disable-defaults",
+		"Set all regions to disabled by default.",
+	).Default("false").Bool()
 	amapKey = kingpin.Flag(
 		"amap.key",
 		"AMAP key, doc: https://console.amap.com/dev/key/app",
-	).Required().String()
+	).Required().String() // amapKey 用于获取 china 地区的数据
+)
+
+const (
+	defaultEnabled  = true
+	defaultDisabled = false
 )
 
 var (
-	collectors = make(map[string]func() (Region, error))
+	regionCollectors = make(map[string]func() ([]*storage.Coordinate, error))
+	regionState      = make(map[string]*bool)
+	forcedRegions    = map[string]bool{} // forcedRegions which have been explicitly enabled or disabled
 )
 
-func registerCollector(regionName string, collector func() (Region, error)) {
-	collectors[regionName] = collector
-}
-
-func Collect() (map[string]*Coordinate, error) {
-	fmt.Println("Start collect coordinates.")
-	coordinates, err := collect()
-	if err != nil {
-		return nil, err
+// registerCollector
+func registerCollector(regionName string, isDefaultEnabled bool, collector func() ([]*storage.Coordinate, error)) {
+	var helpDefaultState string
+	if isDefaultEnabled {
+		helpDefaultState = "enabled"
+	} else {
+		helpDefaultState = "disabled"
 	}
-	return coordinates, nil
+
+	flagName := fmt.Sprintf("region.%s", regionName)
+	flagHelp := fmt.Sprintf("Enable %s region (default: %s).", regionName, helpDefaultState)
+	defaultValue := fmt.Sprintf("%v", isDefaultEnabled)
+
+	flag := kingpin.Flag(flagName, flagHelp).Default(defaultValue).Action(regionFlagAction(regionName)).Bool()
+	regionState[regionName] = flag
+
+	regionCollectors[regionName] = collector
 }
 
-func collect() (map[string]*Coordinate, error) {
-	coordinates := make(map[string]*Coordinate)
-	for s, f := range collectors {
-		fmt.Printf("- Collecting %s...\n", s)
-		region, err := f()
-		if err != nil {
-			return nil, err
+// regionFlagAction generates a new action function for the given region
+// to track whether it has been explicitly enabled or disabled from the command line.
+// A new action function is needed for each region flag because the ParseContext
+// does not contain information about which flag called the action.
+// See: https://github.com/alecthomas/kingpin/issues/294
+func regionFlagAction(regionName string) func(ctx *kingpin.ParseContext) error {
+	return func(ctx *kingpin.ParseContext) error {
+		forcedRegions[regionName] = true
+		return nil
+	}
+}
+
+// disableDefaultRegions sets the region state to false for all regions which
+// have not been explicitly enabled on the command line.
+func disableDefaultRegions() {
+	for c := range regionState {
+		if _, ok := forcedRegions[c]; !ok {
+			*regionState[c] = false
 		}
-		coordinates[s] = region.Convert(topCode)
-		fmt.Println("- Done!")
 	}
-	return coordinates, nil
+}
+
+// Collect enabled regions coordinate
+func Collect() (map[string][]*storage.Coordinate, error) {
+	if *ddr {
+		disableDefaultRegions()
+	}
+	enableRegionList := make([]string, 0)
+	disableRegionList := make([]string, 0)
+	for regionName, state := range regionState {
+		if *state {
+			enableRegionList = append(enableRegionList, regionName)
+		} else {
+			disableRegionList = append(disableRegionList, regionName)
+		}
+	}
+	fmt.Printf("Enabled region list:  %v\n", enableRegionList)
+	fmt.Printf("Disabled region list: %v\n", disableRegionList)
+	fmt.Println("Start collect region coordinates.")
+	regionCoordinates := make(map[string][]*storage.Coordinate)
+	for regionName, state := range regionState {
+		if *state {
+			fmt.Printf("- Collecting %s...\n", regionName)
+			coordinates, err := regionCollectors[regionName]()
+			if err != nil {
+				return nil, err
+			}
+			regionCoordinates[regionName] = coordinates
+			fmt.Println("- Done!")
+		}
+	}
+	return regionCoordinates, nil
 }
