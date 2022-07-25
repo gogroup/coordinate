@@ -3,6 +3,7 @@ package region
 import (
 	"encoding/json"
 	"github.com/gogroup/coordinate/storage"
+	"github.com/morikuni/failure"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -53,15 +54,15 @@ func collectChina() ([]*storage.Coordinate, error) {
 	c := &china{}
 	res, err := http.Get("https://restapi.amap.com/v3/config/district?key=" + *amapKey + "&subdistrict=3")
 	if err != nil {
-		return nil, err
+		return nil, failure.Wrap(err)
 	}
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return nil, failure.Wrap(err)
 	}
 	err = json.Unmarshal(resBody, c)
 	if err != nil {
-		return nil, err
+		return nil, failure.Wrap(err)
 	}
 	return c.convert(), nil
 }

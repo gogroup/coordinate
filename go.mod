@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
+	github.com/morikuni/failure v1.0.0
 	github.com/sirupsen/logrus v1.9.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gorm.io/driver/mysql v1.3.5

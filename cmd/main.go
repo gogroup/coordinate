@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	formatter "github.com/antonfisher/nested-logrus-formatter"
 	"github.com/gogroup/coordinate/region"
 	"github.com/gogroup/coordinate/storage"
@@ -16,12 +17,14 @@ func main() {
 
 	regionCoordinates, err := region.Collect(logger)
 	if err != nil {
-		panic(err)
+		logger.Error(fmt.Sprintf("%+v", err))
+		return
 	}
 
 	err = storage.Store(logger, regionCoordinates)
 	if err != nil {
-		panic(err)
+		logger.Error(fmt.Sprintf("%+v", err))
+		return
 	}
 }
 

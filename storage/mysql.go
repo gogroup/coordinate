@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/morikuni/failure"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -26,11 +27,11 @@ var (
 func initMysql() (storage, error) {
 	db, err := gorm.Open(mysql.Open(*dsn), &gorm.Config{})
 	if err != nil {
-		return nil, err
+		return nil, failure.Wrap(err)
 	}
 	err = db.AutoMigrate(&Coordinate{})
 	if err != nil {
-		return nil, err
+		return nil, failure.Wrap(err)
 	}
 	return &myMysql{DB: db}, nil
 }

@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"fmt"
+	"github.com/morikuni/failure"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -42,7 +43,7 @@ func create() (storage, error) {
 			return f()
 		}
 	}
-	return nil, errors.New("no storage type: " + *storageType)
+	return nil, failure.Wrap(errors.New("no storage type: " + *storageType))
 }
 
 func Store(logger *log.Logger, m map[string][]*Coordinate) error {
