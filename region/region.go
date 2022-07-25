@@ -28,7 +28,6 @@ var (
 	forcedRegions    = map[string]bool{} // forcedRegions which have been explicitly enabled or disabled
 )
 
-// registerCollector
 func registerCollector(regionName string, isDefaultEnabled bool, collector func() ([]*storage.Coordinate, error)) {
 	var helpDefaultState string
 	if isDefaultEnabled {
@@ -62,9 +61,9 @@ func regionFlagAction(regionName string) func(ctx *kingpin.ParseContext) error {
 // disableDefaultRegions sets the region state to false for all regions which
 // have not been explicitly enabled on the command line.
 func disableDefaultRegions() {
-	for c := range regionState {
-		if _, ok := forcedRegions[c]; !ok {
-			*regionState[c] = false
+	for regionName := range regionState {
+		if _, ok := forcedRegions[regionName]; !ok {
+			*regionState[regionName] = false
 		}
 	}
 }
@@ -74,6 +73,7 @@ func Collect() (map[string][]*storage.Coordinate, error) {
 	if *ddr {
 		disableDefaultRegions()
 	}
+
 	enableRegionList := make([]string, 0)
 	disableRegionList := make([]string, 0)
 	for regionName, state := range regionState {
@@ -85,6 +85,7 @@ func Collect() (map[string][]*storage.Coordinate, error) {
 	}
 	fmt.Printf("Enabled region list:  %v\n", enableRegionList)
 	fmt.Printf("Disabled region list: %v\n", disableRegionList)
+
 	fmt.Println("Start collect region coordinates.")
 	regionCoordinates := make(map[string][]*storage.Coordinate)
 	for regionName, state := range regionState {

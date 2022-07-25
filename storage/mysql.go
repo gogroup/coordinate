@@ -12,7 +12,7 @@ func init() {
 	registerInitializer(storageTypeMysql, initMysql)
 }
 
-type Mysql struct {
+type myMysql struct {
 	*gorm.DB
 }
 
@@ -32,11 +32,11 @@ func initMysql() (storage, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Mysql{DB: db}, nil
+	return &myMysql{DB: db}, nil
 }
 
-func (m *Mysql) store(coordinates []*Coordinate) {
+func (m *myMysql) store(coordinates []*Coordinate) {
 	for _, coordinate := range coordinates {
-		m.DB.Create(coordinate)
+		m.Create(coordinate)
 	}
 }

@@ -14,22 +14,22 @@ func init() {
 	registerCollector(regionNameChina, defaultEnabled, collectChina)
 }
 
-type chinaRegion struct {
-	Citycode     interface{}    `json:"citycode"`
-	Adcode       string         `json:"adcode"`
-	Name         string         `json:"name"`
-	Center       string         `json:"center"`
-	Level        string         `json:"level"`
-	ChinaRegions []*chinaRegion `json:"districts"`
+type china struct {
+	Citycode   interface{} `json:"citycode"`
+	Adcode     string      `json:"adcode"`
+	Name       string      `json:"name"`
+	Center     string      `json:"center"`
+	Level      string      `json:"level"`
+	SubRegions []*china    `json:"districts"`
 }
 
-func (c *chinaRegion) convert() []*storage.Coordinate {
+func (c *china) convert() []*storage.Coordinate {
 	coordinates := make([]*storage.Coordinate, 0)
-	var deal func(superCoordinateCode string, c *chinaRegion)
-	deal = func(superCoordinateCode string, c *chinaRegion) {
+	var deal func(superCoordinateCode string, c *china)
+	deal = func(superCoordinateCode string, c *china) {
 		if c.Adcode == "" {
-			if len(c.ChinaRegions) > 0 {
-				deal(superCoordinateCode, c.ChinaRegions[0])
+			if len(c.SubRegions) > 0 {
+				deal(superCoordinateCode, c.SubRegions[0])
 			}
 			return
 		}
@@ -41,7 +41,7 @@ func (c *chinaRegion) convert() []*storage.Coordinate {
 			Longitude:           longitudeAndLatitude[0],
 			Latitude:            longitudeAndLatitude[1],
 		})
-		for _, region := range c.ChinaRegions {
+		for _, region := range c.SubRegions {
 			deal(c.Adcode, region)
 		}
 	}
@@ -50,7 +50,7 @@ func (c *chinaRegion) convert() []*storage.Coordinate {
 }
 
 func collectChina() ([]*storage.Coordinate, error) {
-	china := &chinaRegion{}
+	c := &china{}
 	res, err := http.Get("https://restapi.amap.com/v3/config/district?key=" + *amapKey + "&subdistrict=3")
 	if err != nil {
 		return nil, err
@@ -59,9 +59,9 @@ func collectChina() ([]*storage.Coordinate, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(resBody, china)
+	err = json.Unmarshal(resBody, c)
 	if err != nil {
 		return nil, err
 	}
-	return china.convert(), nil
+	return c.convert(), nil
 }
