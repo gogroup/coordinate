@@ -20,8 +20,8 @@ type Mysql struct {
 
 var (
 	dsn = kingpin.Flag(
-		"dsn",
-		"sink = mysql 时需提供此参数。Mysql 链接, 参考文档: https://github.com/go-sql-driver/mysql#dsn-data-source-name",
+		"storage.mysql.dsn",
+		"MySQL data source name, doc: https://github.com/go-sql-driver/mysql#dsn-data-source-name.",
 	).String()
 )
 

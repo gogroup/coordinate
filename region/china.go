@@ -2,7 +2,6 @@ package region
 
 import (
 	"encoding/json"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -45,13 +44,9 @@ func (c *ChinaRegion) Convert(superCoordinateCode string) *Coordinate {
 	}
 }
 
-var (
-	key = kingpin.Flag("amap.key", "高德应用平台 key, 请在 https://console.amap.com/dev/key/app 申请").String()
-)
-
 func collectChina() (Region, error) {
 	chinaRegion := &ChinaRegion{}
-	res, err := http.Get("https://restapi.amap.com/v3/config/district?key=" + *key + "&subdistrict=3")
+	res, err := http.Get("https://restapi.amap.com/v3/config/district?key=" + *amapKey + "&subdistrict=3")
 	if err != nil {
 		return nil, err
 	}

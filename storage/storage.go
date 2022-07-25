@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"github.com/gogroup/coordinate/region"
 )
 
@@ -16,7 +17,11 @@ func registerInitializer(storageType string, initializer func() (Storage, error)
 	storages[storageType] = initializer
 }
 
-// Init TODO 检查 sink 参数的合法性
 func Init(storageType string) (Storage, error) {
-	return storages[storageType]()
+	for s, f := range storages {
+		if s == storageType {
+			return f()
+		}
+	}
+	return nil, errors.New("no storage type: " + storageType)
 }

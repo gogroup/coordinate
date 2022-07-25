@@ -6,22 +6,21 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-// TODO 参数检查，不传参无法执行，输出 -h
 var (
-	sink = kingpin.Flag(
-		"sink",
-		"持久化数据的系统类型，目前支持的类型有 [mysql]",
+	storageType = kingpin.Flag(
+		"storage.type",
+		"Type of data sink, support: mysql.",
 	).Required().String()
 )
 
 func main() {
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
-	coordinates, err := region.Collect()
+	s, err := storage.Init(*storageType)
 	if err != nil {
 		panic(err)
 	}
-	s, err := storage.Init(*sink)
+	coordinates, err := region.Collect()
 	if err != nil {
 		panic(err)
 	}

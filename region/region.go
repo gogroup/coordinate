@@ -2,6 +2,7 @@ package region
 
 import (
 	"fmt"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 const topCode = "0"
@@ -18,6 +19,13 @@ type Coordinate struct {
 type Region interface {
 	Convert(superCoordinateCode string) *Coordinate
 }
+
+var (
+	amapKey = kingpin.Flag(
+		"amap.key",
+		"AMAP key, doc: https://console.amap.com/dev/key/app",
+	).Required().String()
+)
 
 var (
 	collectors = make(map[string]func() (Region, error))
