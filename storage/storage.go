@@ -8,6 +8,13 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
+var (
+	storageType = kingpin.Flag(
+		"storage.type",
+		"Type of data sink, support: mysql.",
+	).Required().String()
+)
+
 const WorldCode = "0"
 
 type Coordinate struct {
@@ -21,13 +28,6 @@ type Coordinate struct {
 type storage interface {
 	store(coordinates []*Coordinate)
 }
-
-var (
-	storageType = kingpin.Flag(
-		"storage.type",
-		"Type of data sink, support: mysql.",
-	).Required().String()
-)
 
 var (
 	storages = make(map[string]func() (storage, error))

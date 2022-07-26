@@ -7,6 +7,13 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	dsn = kingpin.Flag(
+		"storage.mysql.dsn",
+		"MySQL data source name, doc: https://github.com/go-sql-driver/mysql#dsn-data-source-name.",
+	).String()
+)
+
 const storageTypeMysql = "mysql"
 
 func init() {
@@ -16,13 +23,6 @@ func init() {
 type myMysql struct {
 	*gorm.DB
 }
-
-var (
-	dsn = kingpin.Flag(
-		"storage.mysql.dsn",
-		"MySQL data source name, doc: https://github.com/go-sql-driver/mysql#dsn-data-source-name.",
-	).String()
-)
 
 func initMysql() (storage, error) {
 	db, err := gorm.Open(mysql.Open(*dsn), &gorm.Config{})

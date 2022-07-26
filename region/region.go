@@ -1,21 +1,23 @@
 package region
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gogroup/coordinate/storage"
+	"github.com/morikuni/failure"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
+	fromSnapshots = kingpin.Flag(
+		"region.from-snapshots",
+		"Get data from snapshots instead of online.",
+	).Default("false").Bool()
 	ddr = kingpin.Flag(
 		"region.disable-defaults",
 		"Set all regions to disabled by default.",
 	).Default("false").Bool()
-	amapKey = kingpin.Flag(
-		"amap.key",
-		"AMAP key, doc: https://console.amap.com/dev/key/app",
-	).Required().String() // amapKey 用于获取 china 地区的数据
 )
 
 const (
@@ -24,12 +26,13 @@ const (
 )
 
 var (
-	regionCollectors = make(map[string]func() ([]*storage.Coordinate, error))
-	regionState      = make(map[string]*bool)
-	forcedRegions    = map[string]bool{} // forcedRegions which have been explicitly enabled or disabled
+	collectors    = make(map[string]func() ([]*storage.Coordinate, error))
+	snapshots     = make(map[string]func() ([]*storage.Coordinate, error))
+	regionState   = make(map[string]*bool)
+	forcedRegions = map[string]bool{} // forcedRegions which have been explicitly enabled or disabled
 )
 
-func registerCollector(regionName string, isDefaultEnabled bool, collector func() ([]*storage.Coordinate, error)) {
+func registerRegion(regionName string, isDefaultEnabled bool, collector func() ([]*storage.Coordinate, error), snapshot func() ([]*storage.Coordinate, error)) {
 	var helpDefaultState string
 	if isDefaultEnabled {
 		helpDefaultState = "enabled"
@@ -44,7 +47,8 @@ func registerCollector(regionName string, isDefaultEnabled bool, collector func(
 	flag := kingpin.Flag(flagName, flagHelp).Default(defaultValue).Action(regionFlagAction(regionName)).Bool()
 	regionState[regionName] = flag
 
-	regionCollectors[regionName] = collector
+	collectors[regionName] = collector
+	snapshots[regionName] = snapshot
 }
 
 // regionFlagAction generates a new action function for the given region
@@ -86,13 +90,25 @@ func Collect(logger *log.Logger) (map[string][]*storage.Coordinate, error) {
 	}
 	logger.Info(fmt.Sprintf("Enabled region list:  %v", enableRegionList))
 	logger.Info(fmt.Sprintf("Disabled region list: %v", disableRegionList))
+	if len(enableRegionList) == 0 {
+		return nil, failure.Wrap(errors.New("no region enable"))
+	}
 
-	logger.Info("Start collect region coordinates.")
+	logger.Info("Start getting region coordinates.")
 	regionCoordinates := make(map[string][]*storage.Coordinate)
 	for regionName, state := range regionState {
 		if *state {
-			logger.Info(fmt.Sprintf("- Collecting %s...", regionName))
-			coordinates, err := regionCollectors[regionName]()
+			var (
+				coordinates []*storage.Coordinate
+				err         error
+			)
+			if !*fromSnapshots {
+				logger.Info(fmt.Sprintf("- Collecting %s...", regionName))
+				coordinates, err = collectors[regionName]()
+			} else {
+				logger.Info(fmt.Sprintf("- Parsing %s snapshot...", regionName))
+				coordinates, err = snapshots[regionName]()
+			}
 			if err != nil {
 				return nil, err
 			}
