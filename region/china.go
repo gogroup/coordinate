@@ -81,7 +81,7 @@ func chinaCollector() ([]*storage.Coordinate, error) {
 	return c.convert(), nil
 }
 
-// TODO 抽取成工具类
+// TODO 文件操作抽取成工具类
 func chinaSnapshot() ([]*storage.Coordinate, time.Time, error) {
 	c := &china{}
 	snapshotFile := "region/china.json"

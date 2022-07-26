@@ -97,29 +97,27 @@ func Collect(logger *log.Logger) (map[string][]*storage.Coordinate, error) {
 
 	logger.Info("Start get region coordinates.")
 	regionCoordinates := make(map[string][]*storage.Coordinate)
-	for regionName, state := range regionState {
-		if *state {
-			var (
-				coordinates []*storage.Coordinate
-				err         error
-			)
-			if !*fromSnapshots {
-				logger.Info(fmt.Sprintf("- Collecting %s...", regionName))
-				coordinates, err = collectors[regionName]()
-			} else {
-				logger.Info(fmt.Sprintf("- Parsing %s snapshot...", regionName))
-				var modTime time.Time
-				coordinates, modTime, err = snapshots[regionName]()
-				if err == nil {
-					logger.Info("- Snapshot time: ", modTime.Format("2006-01-02 15:04:06"))
-				}
+	for _, regionName := range enableRegionList {
+		var (
+			coordinates []*storage.Coordinate
+			err         error
+		)
+		if *fromSnapshots {
+			logger.Info(fmt.Sprintf("- Parsing %s snapshot...", regionName))
+			var modTime time.Time
+			coordinates, modTime, err = snapshots[regionName]()
+			if err == nil {
+				logger.Info("- Snapshot time: ", modTime.Format("2006-01-02 15:04:06"))
 			}
-			if err != nil {
-				return nil, err
-			}
-			regionCoordinates[regionName] = coordinates
-			logger.Info("- Done!")
+		} else {
+			logger.Info(fmt.Sprintf("- Collecting %s...", regionName))
+			coordinates, err = collectors[regionName]()
 		}
+		if err != nil {
+			return nil, err
+		}
+		regionCoordinates[regionName] = coordinates
+		logger.Info("- Done!")
 	}
 	return regionCoordinates, nil
 }
