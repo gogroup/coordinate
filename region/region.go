@@ -7,6 +7,7 @@ import (
 	"github.com/morikuni/failure"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
+	"time"
 )
 
 var (
@@ -27,12 +28,12 @@ const (
 
 var (
 	collectors    = make(map[string]func() ([]*storage.Coordinate, error))
-	snapshots     = make(map[string]func() ([]*storage.Coordinate, error))
+	snapshots     = make(map[string]func() ([]*storage.Coordinate, time.Time, error))
 	regionState   = make(map[string]*bool)
 	forcedRegions = map[string]bool{} // forcedRegions which have been explicitly enabled or disabled
 )
 
-func registerRegion(regionName string, isDefaultEnabled bool, collector func() ([]*storage.Coordinate, error), snapshot func() ([]*storage.Coordinate, error)) {
+func registerRegion(regionName string, isDefaultEnabled bool, collector func() ([]*storage.Coordinate, error), snapshot func() ([]*storage.Coordinate, time.Time, error)) {
 	var helpDefaultState string
 	if isDefaultEnabled {
 		helpDefaultState = "enabled"
@@ -88,13 +89,13 @@ func Collect(logger *log.Logger) (map[string][]*storage.Coordinate, error) {
 			disableRegionList = append(disableRegionList, regionName)
 		}
 	}
-	logger.Info(fmt.Sprintf("Enabled region list:  %v", enableRegionList))
-	logger.Info(fmt.Sprintf("Disabled region list: %v", disableRegionList))
+	logger.Info(fmt.Sprintf("Enable  %1d regions: %v", len(enableRegionList), enableRegionList))
+	logger.Info(fmt.Sprintf("Disable %1d regions: %v", len(disableRegionList), disableRegionList))
 	if len(enableRegionList) == 0 {
 		return nil, failure.Wrap(errors.New("no region enable"))
 	}
 
-	logger.Info("Start getting region coordinates.")
+	logger.Info("Start get region coordinates.")
 	regionCoordinates := make(map[string][]*storage.Coordinate)
 	for regionName, state := range regionState {
 		if *state {
@@ -107,7 +108,11 @@ func Collect(logger *log.Logger) (map[string][]*storage.Coordinate, error) {
 				coordinates, err = collectors[regionName]()
 			} else {
 				logger.Info(fmt.Sprintf("- Parsing %s snapshot...", regionName))
-				coordinates, err = snapshots[regionName]()
+				var modTime time.Time
+				coordinates, modTime, err = snapshots[regionName]()
+				if err == nil {
+					logger.Info("- Snapshot time: ", modTime.Format("2006-01-02 15:04:06"))
+				}
 			}
 			if err != nil {
 				return nil, err

@@ -8,7 +8,9 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 )
 
 var (
@@ -79,15 +81,25 @@ func chinaCollector() ([]*storage.Coordinate, error) {
 	return c.convert(), nil
 }
 
-func chinaSnapshot() ([]*storage.Coordinate, error) {
+// TODO 抽取成工具类
+func chinaSnapshot() ([]*storage.Coordinate, time.Time, error) {
 	c := &china{}
-	file, err := ioutil.ReadFile("region/china.json")
+	snapshotFile := "region/china.json"
+	file, err := os.Open(snapshotFile)
 	if err != nil {
-		return nil, failure.Wrap(err)
+		return nil, time.Time{}, failure.Wrap(err)
 	}
-	err = json.Unmarshal(file, c)
+	fileInfo, err := file.Stat()
 	if err != nil {
-		return nil, failure.Wrap(err)
+		return nil, time.Time{}, failure.Wrap(err)
 	}
-	return c.convert(), nil
+	content, err := ioutil.ReadFile(snapshotFile)
+	if err != nil {
+		return nil, time.Time{}, failure.Wrap(err)
+	}
+	err = json.Unmarshal(content, c)
+	if err != nil {
+		return nil, time.Time{}, failure.Wrap(err)
+	}
+	return c.convert(), fileInfo.ModTime(), nil
 }
